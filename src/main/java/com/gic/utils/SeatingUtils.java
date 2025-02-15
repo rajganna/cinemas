@@ -55,24 +55,22 @@ public class SeatingUtils {
     }
 
     public static void displaySeatingMap(Cinema cinema, List<int[]> newBookings) {
-        System.out.println("\n        🎥 S C R E E N 🎥");
+        System.out.println("\n     🎥 S C R E E N 🎥");
         System.out.println("  --------------------------------");
-
-        // Print column numbers (1-based index)
         System.out.print("    ");
         for (int j = 0; j < cinema.seatsPerRow(); j++) {
             System.out.print((j + 1) + " ");
         }
         System.out.println();
 
-        // Print each row
+
         for (int i = 0; i < cinema.rows(); i++) {
-            System.out.print((char) ('A' + i) + "   ");  // Print row letter
+            System.out.print((char) ('A' + i) + "   ");
             for (int j = 0; j < cinema.seatsPerRow(); j++) {
                 switch (cinema.seatingMap()[i][j]) {
-                    case 0 -> System.out.print(". ");  // Available
-                    case 1 -> System.out.print("# ");  // Previously reserved
-                    case 2 -> System.out.print("o ");  // Newly booked
+                    case 0 -> System.out.print(". ");
+                    case 1 -> System.out.print("# ");
+                    case 2 -> System.out.print("o ");
                 }
             }
             System.out.println();

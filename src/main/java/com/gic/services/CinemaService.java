@@ -2,8 +2,10 @@ package com.gic.services;
 
 import com.gic.models.Cinema;
 
+import java.util.Optional;
+
 public interface CinemaService {
-    void initializeCinema(String input);
+    Optional<Cinema> initializeCinema(String input);
     int getSeatsAvailable();
     void bookTickets(int numTickets, int startRow, int startCol);
     void bookTickets(int numTickets);

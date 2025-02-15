@@ -20,11 +20,12 @@ public class CinemaServiceImpl implements CinemaService {
 
 
     @Override
-    public void initializeCinema(String input) {
+    public Optional<Cinema> initializeCinema(String input) {
         Optional<Cinema> cinemaOptional = processInitialParams(input);
         cinemaOptional.ifPresent(c -> {
             this.cinema = c;
         });
+        return cinemaOptional;
     }
 
     @Override
@@ -79,6 +80,7 @@ public class CinemaServiceImpl implements CinemaService {
     @Override
     public void confirmSeats(String bookingId) {
         confirmReservation(bookingId);
+        cinema.reservationMap().remove(bookingId);
     }
 
     @Override
@@ -92,9 +94,12 @@ public class CinemaServiceImpl implements CinemaService {
 
     @Override
     public void confirmSeatsWithStarting(String bookingId, String startSeat, int numSeats) {
-        List<String> allocatedSeats = confirmReservationStarting(bookingId, startSeat, numSeats);
-        if (!allocatedSeats.isEmpty())
+        List<String> allocatedSeats = confirmReservationStarting(startSeat, numSeats);
+        if (!allocatedSeats.isEmpty()) {
+            cinema.reservationMap().put(bookingId, allocatedSeats);
             bookingHistory.put(bookingId, allocatedSeats);
+            confirmSeats(bookingId);
+        }
     }
 
     @Override
@@ -132,13 +137,32 @@ public class CinemaServiceImpl implements CinemaService {
                 }
             }
 
-            int mid = cinema.seatsPerRow() / 2;
-            availableColumns.sort(Comparator.comparingInt(col -> Math.abs(col - mid +  1)));
+            if (availableColumns.isEmpty()) continue; // Skip fully booked rows
 
-            for (int col : availableColumns) {
+            int mid = (cinema.seatsPerRow() - 1) / 2;
+
+            availableColumns.sort(Comparator.comparingInt((Integer col) -> Math.abs(col - mid))
+                    .thenComparingInt(col -> col));
+
+            List<Integer> orderedSeats = new ArrayList<>();
+
+            // Allocate seats starting from the middle, expanding outward
+            int left = mid, right = mid + 1;
+            while (orderedSeats.size() < numSeats && (left >= 0 || right < cinema.seatsPerRow())) {
+                if (left >= 0 && availableColumns.contains(left)) {
+                    orderedSeats.add(left);
+                }
+                if (right < cinema.seatsPerRow() && availableColumns.contains(right)) {
+                    orderedSeats.add(right);
+                }
+                left--;
+                right++;
+            }
+
+            for (int col : orderedSeats) {
                 if (allocatedSeats.size() < numSeats) {
                     cinema.seatingMap()[i][col] = 'o';
-                    allocatedSeats.add((char) ('A' + i) + String.valueOf(col + 1));
+                    allocatedSeats.add((char) ('A' + i) + String.valueOf(col));
                 } else {
                     break;
                 }
@@ -165,14 +189,13 @@ public class CinemaServiceImpl implements CinemaService {
                 cinema.seatingMap()[row][col] = '#';
             }
         }
-
-        cinema.reservationMap().remove(bookingId);
     }
 
-    private List<String> confirmReservationStarting(String bookingId, String startSeat, int numSeats) {
+    private List<String> confirmReservationStarting(String startSeat, int numSeats) {
         List<String> allocatedSeats = new ArrayList<>();
+
         if (startSeat.length() < 2) {
-            System.out.println("❌ Invalid seat format. Please enter a valid seat (e.g., C5).");
+            logger.warn("❌ Invalid seat format. Please enter a valid seat (e.g., C5).");
             return List.of();
         }
 
@@ -180,25 +203,31 @@ public class CinemaServiceImpl implements CinemaService {
         int startCol;
 
         try {
-            startCol = Integer.parseInt(startSeat.substring(1)) - 1;
+            startCol = Integer.parseInt(startSeat.substring(1), 10) - 1;  // Ensure leading zeros don't affect parsing
+            logger.info("Parsed seat: " + startSeat + " → Row: " + startRow + " Col: " + startCol);
         } catch (NumberFormatException e) {
-            System.out.println("❌ Invalid seat number. Please enter a valid seat (e.g., C5).");
+            logger.warn("❌ Invalid seat number. Please enter a valid seat (e.g., C5).");
             return List.of();
         }
 
         if (startRow < 0 || startRow >= cinema.rows() || startCol < 0 || startCol >= cinema.seatsPerRow()) {
-            System.out.println("❌ Invalid seat selection: Out of bounds.");
+            logger.warn("❌ Invalid seat selection: Out of bounds.");
             return List.of();
         }
 
         int seatsFilled = 0;
-        for (int col = startCol; col < cinema.seatsPerRow() && seatsFilled < numSeats; col++) {
-            if (cinema.seatingMap()[startRow][col] == '.') {
-                cinema.seatingMap()[startRow][col] = 'o';
-                allocatedSeats.add((char) ('A' + startRow) + String.valueOf(col + 1));
-                seatsFilled++;
+        for (int row = startRow; row < cinema.rows() && seatsFilled < numSeats; row++) {
+            for (int col = (row == startRow ? startCol : 0); col < cinema.seatsPerRow() && seatsFilled < numSeats; col++) {
+                if (cinema.seatingMap()[row][col] == '.') {
+                    cinema.seatingMap()[row][col] = 'o';
+                    String seatLabel = (char) ('A' + row) + Integer.toString(col);
+                    logger.info("Allocating seat: " + seatLabel);
+                    allocatedSeats.add(seatLabel);
+                    seatsFilled++;
+                }
             }
         }
+
         return allocatedSeats;
     }
 }

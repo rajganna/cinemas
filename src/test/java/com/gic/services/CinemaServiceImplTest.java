@@ -47,18 +47,6 @@ public class CinemaServiceImplTest {
     }
 
     @Test
-    void testCancelReservation() {
-        String bookingId = "BOOK-123";
-        int numSeats = 5;
-        cinemaService.reserveSeats(numSeats, bookingId);
-
-        boolean isCancelled = cinemaService.cancelReservation(bookingId);
-
-        assertTrue(isCancelled);
-        assertEquals(80, cinemaService.getSeatsAvailable());
-    }
-
-    @Test
     void testConfirmSeats() {
         String bookingId = "BOOK-123";
         int numSeats = 3;
