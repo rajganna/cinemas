@@ -146,7 +146,6 @@ public class CinemaServiceImpl implements CinemaService {
 
             List<Integer> orderedSeats = new ArrayList<>();
 
-            // Allocate seats starting from the middle, expanding outward
             int left = mid, right = mid + 1;
             while (orderedSeats.size() < numSeats && (left >= 0 || right < cinema.seatsPerRow())) {
                 if (left >= 0 && availableColumns.contains(left)) {

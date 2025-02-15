@@ -23,7 +23,7 @@ public class CommandFactory {
         Class<? extends Command> commandClass = commandMap.get(choice);
 
         if (commandClass == null) {
-            return context.getBean(InvalidCommand.class); // Handle invalid choice
+            return context.getBean(InvalidCommand.class);
         }
 
         return context.getBean(commandClass);
